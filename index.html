@@ -25,6 +25,75 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         input[type="checkbox"] { accent-color: #7c3aed; }
+        .baby-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 16px;
+            margin-top: 12px;
+        }
+        .baby-avatar {
+            font-size: 48px;
+            line-height: 1;
+            transition: transform 0.3s ease;
+        }
+        .baby-avatar.bounce {
+            animation: babyBounce 0.6s ease infinite;
+        }
+        .baby-avatar.sleep {
+            animation: babySleep 2s ease-in-out infinite;
+        }
+        .baby-avatar.wiggle {
+            animation: babyWiggle 0.5s ease infinite;
+        }
+        .baby-avatar.celebrate {
+            animation: babyCelebrate 0.4s ease infinite;
+        }
+        @keyframes babyBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes babySleep {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+        @keyframes babyWiggle {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+        @keyframes babyCelebrate {
+            0%, 100% { transform: scale(1) rotate(-5deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+        .baby-mood {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-top: 6px;
+            text-align: center;
+        }
+        .baby-speech {
+            font-size: 10px;
+            background: white;
+            color: #667eea;
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-top: 6px;
+            position: relative;
+            max-width: 140px;
+            text-align: center;
+        }
+        .baby-speech::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 6px solid white;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -48,6 +117,11 @@
                 <div class="flex justify-between text-xs mb-1"><span>Общий прогресс</span><span id="progressPercent">0%</span></div>
                 <div class="h-2 bg-white/30 rounded-full overflow-hidden"><div id="progressBar" class="h-full bg-white progress-bar rounded-full" style="width:0%"></div></div>
             </div>
+            <div class="baby-container">
+                <div id="babyAvatar" class="baby-avatar sleep">😒</div>
+                <div id="babyMood" class="baby-mood">Малыш ждёт...</div>
+                <div id="babySpeech" class="baby-speech">Отмечай задачи!</div>
+            </div>
         </header>
         <div class="sticky z-40 bg-gray-50 p-2 shadow-sm" style="top:176px;">
             <div class="flex overflow-x-auto gap-1 pb-1 hide-scrollbar" id="monthTabs"></div>
@@ -57,6 +131,9 @@
             <div class="bg-white rounded-2xl w-full max-w-sm p-5 shadow-xl">
                 <h3 class="text-lg font-bold text-gray-800 mb-4">⚙️ Настройки</h3>
                 <div class="space-y-3">
+                    <button onclick="backupData()" class="w-full p-3 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100">💾 Сохранить резервную копию</button>
+                    <button onclick="restoreData()" class="w-full p-3 bg-green-50 text-green-600 rounded-lg text-sm font-medium hover:bg-green-100">📂 Восстановить из копии</button>
+                    <div class="pt-2 border-t"></div>
                     <button onclick="resetProgress()" class="w-full p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100">🗑 Сбросить весь прогресс</button>
                     <button onclick="resetBirthDate()" class="w-full p-3 bg-orange-50 text-orange-600 rounded-lg text-sm font-medium hover:bg-orange-100">📅 Очистить дату рождения</button>
                     <p class="text-xs text-gray-400 text-center pt-2 border-t">Данные хранятся локально в браузере</p>
@@ -92,7 +169,19 @@ function renderContent(){const c=document.getElementById('content'),d=healthData
 function renderCat(key,cat){return`<div class="bg-white rounded-xl shadow-sm mb-4 overflow-hidden category-${key}"><div class="p-3 bg-gray-50 border-b flex items-center gap-2"><span class="text-lg">${cat.icon}</span><h3 class="font-semibold text-gray-800">${cat.title}</h3></div><div class="p-3 space-y-1">${cat.items.map(i=>renderItem(i)).join('')}</div></div>`}
 function renderItem(item){const done=completedItems[item.id];return`<label class="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer ${done?'opacity-60':''}"><input type="checkbox" ${done?'checked':''} onchange="toggle('${item.id}')" class="mt-0.5 w-5 h-5 rounded flex-shrink-0"><div class="flex-1"><div class="text-sm ${done?'line-through text-gray-400':'text-gray-700'}">${item.text}</div>${item.note?`<div class="text-xs text-gray-400 mt-1">${item.note}</div>`:''}</div></label>`}
 function toggle(id){completedItems[id]=!completedItems[id];if(!completedItems[id])delete completedItems[id];safeSet('completedItems',JSON.stringify(completedItems));renderMonthTabs();renderContent();updateProgress()}
-function updateProgress(){let t=0,c=0;for(let m=1;m<=6;m++)for(const cat of Object.values(healthData[m].categories))for(const item of cat.items){t++;if(completedItems[item.id])c++}const pct=t>0?Math.round(c/t*100):0;document.getElementById('progressPercent').textContent=`${pct}%`;document.getElementById('progressBar').style.width=`${pct}%`}
+function updateProgress(){let t=0,c=0;for(let m=1;m<=6;m++)for(const cat of Object.values(healthData[m].categories))for(const item of cat.items){t++;if(completedItems[item.id])c++}const pct=t>0?Math.round(c/t*100):0;document.getElementById('progressPercent').textContent=`${pct}%`;document.getElementById('progressBar').style.width=`${pct}%`;updateBaby(pct)}
+const babyStates=[
+{max:0,emoji:'😒',anim:'sleep',mood:'Малыш ждёт...',speech:'Отмечай задачи!'},
+{max:10,emoji:'😒',anim:'sleep',mood:'Малыш спит',speech:'Zzz... пора начинать!'},
+{max:20,emoji:'🥒',anim:'wiggle',mood:'Малыш просыпается',speech:'Агу? Что там?'},
+{max:35,emoji:'😒',anim:'wiggle',mood:'Малыш любопытный',speech:'О, интересно!'},
+{max:50,emoji:'😊',anim:'bounce',mood:'Малыш доволен',speech:'Так держать!'},
+{max:65,emoji:'😃',anim:'bounce',mood:'Малыш радуется',speech:'Ура! Молодцы!'},
+{max:80,emoji:'🤗',anim:'bounce',mood:'Малыш счастлив',speech:'Почти всё!'},
+{max:99,emoji:'🥳',anim:'celebrate',mood:'Малыш в восторге',speech:'Ещё чуть-чуть!'},
+{max:100,emoji:'🎉',anim:'celebrate',mood:'Малыш — чемпион!',speech:'100%! Ты супер!'}
+];
+function updateBaby(pct){const state=babyStates.find(s=>pct<=s.max)||babyStates[babyStates.length-1];const avatar=document.getElementById('babyAvatar');const mood=document.getElementById('babyMood');const speech=document.getElementById('babySpeech');avatar.textContent=state.emoji;avatar.className='baby-avatar '+state.anim;mood.textContent=state.mood;speech.textContent=state.speech}
 function updateNav(){document.querySelectorAll('[id^="nav-"]').forEach(b=>b.classList.remove('nav-active'));const a=document.getElementById(`nav-${currentView}`);if(a)a.classList.add('nav-active')}
 function showView(v){currentView=v;renderContent();updateNav()}
 function renderVaccines(c){let h=`<div class="fade-in"><h2 class="text-xl font-bold text-gray-800 mb-4 text-center">💉 Календарь прививок</h2>`;for(let m=1;m<=6;m++){const v=healthData[m].categories.vaccines;if(v&&v.items.length>0)h+=`<div class="bg-white rounded-xl shadow-sm mb-4 overflow-hidden category-vaccines"><div class="p-3 bg-green-50 border-b"><h3 class="font-semibold text-gray-800">${m}-й месяц</h3></div><div class="p-3 space-y-1">${v.items.map(i=>renderItem(i)).join('')}</div></div>`}h+='</div>';c.innerHTML=h}
@@ -103,6 +192,8 @@ function resetProgress(){if(confirm('Сбросить весь прогресс?
 function resetBirthDate(){birthDate='';safeSet('birthDate','');document.getElementById('birthDate').value='';document.getElementById('currentAge').textContent='';hideSettings()}
 function genUID(){return'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16)})}
 function exportData(){if(!birthDate){alert('Укажите дату рождения для экспорта');return}const birth=new Date(birthDate),ts=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';let ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Child Health//RU\r\nCALSCALE:GREGORIAN\r\nX-WR-CALNAME:Дорожная карта здоровья\r\n';for(let m=1;m<=6;m++){const d=healthData[m],evDate=new Date(birth);evDate.setMonth(evDate.getMonth()+m-1);const dateOnly=evDate.toISOString().split('T')[0].replace(/-/g,''),docs=d.categories.doctors.items.map(i=>'- '+i.text).join('\\n'),vacc=d.categories.vaccines.items.map(i=>'- '+i.text).join('\\n');ics+=`BEGIN:VEVENT\r\nUID:${genUID()}@child\r\nDTSTAMP:${ts}\r\nDTSTART;VALUE=DATE:${dateOnly}\r\nSUMMARY:${m}-й месяц: ${d.subtitle}\r\nDESCRIPTION:ВРАЧИ:\\n${docs}\\n\\nПРИВИВКИ:\\n${vacc}\r\nEND:VEVENT\r\n`}ics+='END:VCALENDAR';const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='child-health-roadmap.ics';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)}
+function backupData(){const data={version:1,birthDate:birthDate,completedItems:completedItems,exportedAt:new Date().toISOString()};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='child-health-backup.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);hideSettings()}
+function restoreData(){const input=document.createElement('input');input.type='file';input.accept='.json';input.onchange=function(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(ev){try{const data=JSON.parse(ev.target.result);if(!data.version||typeof data.completedItems!=='object'){alert('Неверный формат файла резервной копии');return}if(confirm('Восстановить данные из резервной копии? Текущий прогресс будет заменён.')){completedItems=data.completedItems||{};birthDate=data.birthDate||'';safeSet('completedItems',JSON.stringify(completedItems));safeSet('birthDate',birthDate);if(birthDate){document.getElementById('birthDate').value=birthDate;updateBirthDate()}renderMonthTabs();renderContent();updateProgress();hideSettings();alert('Данные успешно восстановлены!')}}catch(err){alert('Ошибка чтения файла: '+err.message)}};reader.readAsText(file)};input.click()}
 document.getElementById('settingsModal').addEventListener('click',function(e){if(e.target===this)hideSettings()});
 document.addEventListener('DOMContentLoaded',init);
 if(document.readyState!=='loading')init();
